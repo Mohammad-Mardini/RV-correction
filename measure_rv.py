@@ -444,3 +444,43 @@ def _tukey(n, alpha=0.2):
         return w
 
 
+def _antisym_centroid(vel, ccf, pidx, win_k, search_pix=1.5, nsub=61):
+    """
+    Tonry & Davis (1979) antisymmetric-component peak centroid.
+
+    The true velocity is the center about which the CCF is maximally SYMMETRIC:
+    a perfect, noise-free correlation peak is an even function of the shift, so
+    the odd (antisymmetric) part about the true peak is pure noise.  We search a
+    sub-pixel offset δ around the integer peak and pick the δ that minimizes the
+    RMS of the antisymmetric part
+        a_k(δ) = ½ [ c(v_pk+δ+kΔ) − c(v_pk+δ−kΔ) ],  k = 1 … win_k
+    over the whole peak window.  Because it uses the entire peak shape rather
+    than the three pixels a parabola sees, it is markedly more robust to noise
+    at the very top of the CCF (which is exactly where a 3-point parabola is
+    weakest).  Returns (rv, peak_height, curvature); curvature>0 at a real max
+    and feeds the FWHM used for the velocity error.
+    """
+    dv     = vel[1] - vel[0]
+    v_pk   = vel[pidx]
+    ks     = (np.arange(1, win_k + 1) * dv)[None, :]                 # (1, win_k)
+    deltas = (np.linspace(-search_pix, search_pix, nsub) * dv)[:, None]  # (nsub,1)
+    centers = v_pk + deltas
+    c_plus  = np.interp((centers + ks).ravel(), vel, ccf).reshape(nsub, win_k)
+    c_minus = np.interp((centers - ks).ravel(), vel, ccf).reshape(nsub, win_k)
+    asym    = np.mean((0.5 * (c_plus - c_minus)) ** 2, axis=1)       # (nsub,)
+
+    j = int(np.argmin(asym))
+    if 1 <= j <= len(asym) - 2:                    # parabolic refine of the min
+        y0, y1, y2 = asym[j - 1], asym[j], asym[j + 1]
+        den  = y0 - 2 * y1 + y2
+        frac = 0.5 * (y0 - y2) / den if den != 0 else 0.0
+        d_best = float(deltas[j, 0] + frac * (deltas[1, 0] - deltas[0, 0]))
+    else:
+        d_best = float(deltas[j, 0])
+    rv = v_pk + d_best
+
+    peak_h = float(np.interp(rv, vel, ccf))
+    c_l = float(np.interp(rv - dv, vel, ccf))
+    c_r = float(np.interp(rv + dv, vel, ccf))
+    curv = -(c_l - 2.0 * peak_h + c_r)             # >0 for a maximum
+    return rv, peak_h, curv
