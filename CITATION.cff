@@ -1,0 +1,18 @@
+cff-version: 1.2.0
+message: "If you use this software, please cite it as below."
+title: "RV-correction: radial velocities of MIKE echelle spectra"
+type: software
+authors:
+  - family-names: "Mardini"
+    given-names: "Mohammad K. H."
+    orcid: "https://orcid.org/0000-0001-9178-3992"
+version: "1.0.0"
+date-released: "2026-10-06"
+license: MIT
+repository-code: "https://github.com/Mohammad-Mardini/RV-correction"
+keywords:
+  - astronomy
+  - spectroscopy
+  - radial velocity
+  - cross-correlation
+  - echelle

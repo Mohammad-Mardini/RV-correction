@@ -1,0 +1,13 @@
+# Data and outputs
+*.fits
+rv_results.csv
+rv_plots/
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+venv/
+
+# OS
+.DS_Store

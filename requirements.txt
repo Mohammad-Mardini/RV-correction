@@ -1,0 +1,5 @@
+# Tested with Python 3.10-3.12 and matplotlib 3.5-3.10
+numpy
+scipy
+astropy
+matplotlib>=3.5
