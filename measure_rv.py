@@ -423,3 +423,24 @@ def measure_rv(fp,ap_order,ord_dict,data):
     ra=para_peak(rc,cc); rf=np.arange(ra-50,ra+50+0.5,0.5)
     cf=joint_ccf(ap_order,ord_dict,data,rf,anchor=ra); rv=para_peak(rf,cf)
     return rv,float(cf.max()),rf,cf
+
+
+def _tukey(n, alpha=0.2):
+    """Tukey (tapered cosine) window; alpha in [0,1] = fraction tapered."""
+    try:
+        from scipy.signal.windows import tukey as _sp_tukey
+        return _sp_tukey(n, alpha)
+    except Exception:
+        if alpha <= 0:
+            return np.ones(n)
+        w = np.ones(n)
+        edge = int(alpha * (n - 1) / 2.0)
+        if edge < 1:
+            return w
+        k = np.arange(edge)
+        taper = 0.5 * (1 + np.cos(np.pi * (k / edge - 1)))
+        w[:edge] = taper
+        w[-edge:] = taper[::-1]
+        return w
+
+
