@@ -418,3 +418,8 @@ def para_peak(rg,ccf):
         x,y=rg[pi-2:pi+3],ccf[pi-2:pi+3]; c=np.polyfit(x,y,2); return -c[1]/(2*c[0])
     return rg[pi]
 
+def measure_rv(fp,ap_order,ord_dict,data):
+    rc=np.arange(-500,500,2.); cc=joint_ccf(ap_order,ord_dict,data,rc)
+    ra=para_peak(rc,cc); rf=np.arange(ra-50,ra+50+0.5,0.5)
+    cf=joint_ccf(ap_order,ord_dict,data,rf,anchor=ra); rv=para_peak(rf,cf)
+    return rv,float(cf.max()),rf,cf
