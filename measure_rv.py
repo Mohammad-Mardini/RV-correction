@@ -100,7 +100,9 @@ CCF_REGIONS   = [(8450,8750,"Ca II IR"),(6510,6610,"Hα"),(5100,5200,"Mg b"),
                  (4810,4910,"Hβ"),(4290,4390,"Ca H&K")]
 
 
-OBSERVATORY   = EarthLocation(lat=-29.0146*u.deg,lon=-70.6926*u.deg,height=2380*u.m)
+OBSERVATORY_SITE = EarthLocation(lat=-29.0146*u.deg,lon=-70.6926*u.deg,height=2380*u.m)
+_SITE = {"location": OBSERVATORY_SITE, "label": "default site (Las Campanas)",
+         "use_header": True}      # set from OBSERVATORY / USE_HEADER_SITE in main()
 
 
 C_KMS         = 2.99792458e5
@@ -198,20 +200,21 @@ def obs_time_from_header(hdr):
     return t0, t0 + 0.5 * exp * u.second, src + (" + EXPTIME/2" if exp else " (start)")
 
 
+
 def obs_site_from_header(hdr):
-    """EarthLocation from SITELAT/SITELONG (east-positive)/SITEALT, else
-    OBSERVATORY (Las Campanas).  The site only enters through Earth's
-    rotation, < 0.5 km/s."""
+    """EarthLocation from SITELAT/SITELONG (east-positive)/SITEALT, else the
+    chosen OBSERVATORY (always the chosen one when USE_HEADER_SITE is False).
+    The site only enters through Earth's rotation, < 0.5 km/s."""
     try:
         lat, lon = hdr.get("SITELAT"), hdr.get("SITELONG")
-        if lat is not None and lon is not None:
+        if _SITE["use_header"] and lat is not None and lon is not None:
             alt = _hdr_float(hdr, "SITEALT") or 0.0
             return (EarthLocation(lat=Angle(lat, unit=u.deg), lon=Angle(lon, unit=u.deg),
                                   height=alt * u.m),
                     f"SITELAT/SITELONG ({hdr.get('SITENAME', 'site')})")
     except Exception:
         pass
-    return OBSERVATORY, "default site (Las Campanas)"
+    return _SITE["location"], _SITE["label"]
 
 
 def obs_coord_from_header(hdr):
