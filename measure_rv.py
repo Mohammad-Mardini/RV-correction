@@ -53,6 +53,44 @@ CSV_NAMES = {"Ca II IR": "CaIIIR", "H\u03b1": "Halpha", "Mg b": "Mgb",
 OBSERVATORY     = "Magellan (Las Campanas; MIKE)"
 USE_HEADER_SITE = True
 
+# Coordinates from astropy's observatory registry (astropy-data sites.json),
+# except Magellan, from the MIKE headers.  Add your own as needed.
+OBSERVATORIES = {
+    # name                                         latitude    longitude    height
+    #                                                (deg)    (deg, east +)   (m)
+    "Magellan (Las Campanas; MIKE)":               (-29.01423,  -70.69242,  2400),
+    "Paranal (VLT; UVES, ESPRESSO)":               (-24.62744,  -70.40499,  2669),
+    "La Silla (ESO 3.6m, MPG 2.2m; HARPS, FEROS)": (-29.25667,  -70.73000,  2347),
+    "Las Campanas Observatory (du Pont)":          (-29.00333,  -70.70167,  2282),
+    "Cerro Tololo (CTIO)":                         (-30.16528,  -70.81500,  2215),
+    "Gemini South (Cerro Pachon)":                 (-30.24074,  -70.73668,  2750),
+    "Gemini North (Maunakea)":                     ( 19.82380, -155.46905,  4213),
+    "Keck (Maunakea; HIRES)":                      ( 19.82833, -155.47833,  4160),
+    "Subaru (Maunakea; HDS)":                      ( 19.82556, -155.47611,  4139),
+    "CFHT (Maunakea; ESPaDOnS)":                   ( 19.82667, -155.47167,  4215),
+    "LBT (Mount Graham; PEPSI)":                   ( 32.70160, -109.87190,  2902),
+    "MMT (Mount Hopkins)":                         ( 31.68833, -110.88500,  2608),
+    "McDonald Observatory":                        ( 30.67167, -104.02167,  2075),
+    "Hobby-Eberly Telescope (McDonald)":           ( 30.68139, -104.01472,  2026),
+    "Apache Point (ARC 3.5m)":                     ( 32.78000, -105.82000,  2798),
+    "Kitt Peak (KPNO)":                            ( 31.96333, -111.60000,  2120),
+    "Lick Observatory":                            ( 37.34333, -121.63667,  1290),
+    "Palomar (Hale)":                              ( 33.35600, -116.86300,  1706),
+    "Roque de los Muchachos (La Palma)":           ( 28.75833,  -17.88000,  2327),
+    "Observatorio del Teide (Tenerife)":           ( 28.30000,  -16.50972,  2390),
+    "Calar Alto (CAHA)":                           ( 37.22361,   -2.54611,  2168),
+    "Haute-Provence (OHP; SOPHIE)":                ( 43.93083,    5.71333,   650),
+    "Xinglong (BAO; LAMOST)":                      ( 40.39333,  117.57500,   950),
+    "Lijiang Observatory":                         ( 26.69510,  100.03000,  3200),
+    "Okayama Astrophysical Observatory":           ( 34.57708,  133.59396,   370),
+    "Indian Astronomical Observatory (Hanle)":     ( 32.77944,   78.96417,  4500),
+    "Thai National Observatory":                   ( 18.59056,   98.48667,  2457),
+    "TUBITAK National Observatory":                ( 36.82417,   30.33555,  2500),
+    "Siding Spring Observatory":                   (-31.27336,  149.06119,  1149),
+    "Anglo-Australian Telescope (Siding Spring)":  (-31.27704,  149.06609,  1164),
+    "SALT (Sutherland)":                           (-32.37582,   20.81081,  1798),
+}
+
 
 # ─────────────────────────────────────────────────────────────────────────────
 # Measurement: copied unchanged from coadd_gui.py
