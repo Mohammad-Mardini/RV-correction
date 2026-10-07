@@ -41,7 +41,16 @@ PLOT_DIR = "rv_plots"           # one figure per spectrum
 PLOTS    = True                 # False: measure only
 SAVE_SHIFTED = True             # write each spectrum shifted to the rest frame (FITS)
 SHIFTED_DIR  = "rv_shifted"     # folder for the RV-shifted spectra
+OBSERVATORY     = "Magellan (Las Campanas; MIKE)"   # site for the barycentric correction
+USE_HEADER_SITE = True          # header SITELAT/SITELONG/SITEALT first, if present
 ```
+
+`OBSERVATORY` is a name from the `OBSERVATORIES` table in the script (about 30
+optical observatories; coordinates from astropy's observatory registry) or
+your own `(latitude_deg, longitude_deg_east, height_m)`. With
+`USE_HEADER_SITE = True` a spectrum's own site keywords are used when present,
+and `OBSERVATORY` only when they are missing; with `False` it is used for every
+spectrum. The site affects only Earth's rotation, less than 0.5 km/s.
 
 then run
 
