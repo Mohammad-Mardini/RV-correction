@@ -43,6 +43,17 @@ CSV_NAMES = {"Ca II IR": "CaIIIR", "H\u03b1": "Halpha", "Mg b": "Mgb",
              "H\u03b2": "Hbeta", "Ca H&K": "CaHK"}
 
 
+
+
+# Observatory for the barycentric correction: a name from OBSERVATORIES below,
+# or your own (latitude_deg, longitude_deg_east, height_m).  With
+# USE_HEADER_SITE = True the site in each spectrum's header (SITELAT/SITELONG/
+# SITEALT) is used when present, and OBSERVATORY only for spectra without one;
+# with False, OBSERVATORY is used for every spectrum.
+OBSERVATORY     = "Magellan (Las Campanas; MIKE)"
+USE_HEADER_SITE = True
+
+
 # ─────────────────────────────────────────────────────────────────────────────
 # Measurement: copied unchanged from coadd_gui.py
 # ─────────────────────────────────────────────────────────────────────────────
@@ -649,3 +660,6 @@ def ccf_region_pixels(ap_order, ord_dict, data, region):
         if inreg.sum() >= 10:
             out.append((ap, w[inreg], fl[inreg]))
     return out
+
+
+RV_AUTO_LABEL = "Best CCF peak (auto)"
