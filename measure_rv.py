@@ -631,3 +631,12 @@ def measure_rv_region_td(ap_order, ord_dict, data, region, template_interp,
     return tonry_davis_ccf(np.concatenate([p[1] for p in pieces]),
                            np.concatenate([p[2] for p in pieces]),
                            template_interp, vmin=-vmax, vmax=vmax)
+
+
+def ccf_region_pixels(ap_order, ord_dict, data, region):
+    """The pixels one CCF region correlates: every order with >= 10 pixels
+    within the region +/- 5 A (OBSERVED wavelengths), continuum-normalized
+    with normed_flux() defaults.  Returns [(ap, wav, flux), ...].  Shared by
+    measure_rv_region_td and the RV tab's spectrum check, so the plot shows
+    exactly the CCF input (tonry_davis_ccf then sorts, resamples to ln(lambda)
+    and divides by the median)."""
