@@ -640,3 +640,12 @@ def ccf_region_pixels(ap_order, ord_dict, data, region):
     measure_rv_region_td and the RV tab's spectrum check, so the plot shows
     exactly the CCF input (tonry_davis_ccf then sorts, resamples to ln(lambda)
     and divides by the median)."""
+    r0, r1, _ = region
+    out = []
+    for i, ap in enumerate(ap_order):
+        w  = wav_arr(ord_dict[ap])
+        fl = normed_flux(ord_dict[ap], data, i)
+        inreg = (w >= r0 - 5) & (w <= r1 + 5)
+        if inreg.sum() >= 10:
+            out.append((ap, w[inreg], fl[inreg]))
+    return out
