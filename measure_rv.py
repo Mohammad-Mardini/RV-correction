@@ -484,3 +484,134 @@ def _antisym_centroid(vel, ccf, pidx, win_k, search_pix=1.5, nsub=61):
     c_r = float(np.interp(rv + dv, vel, ccf))
     curv = -(c_l - 2.0 * peak_h + c_r)             # >0 for a maximum
     return rv, peak_h, curv
+
+def tonry_davis_ccf(wav, flux, template_interp, vmin=-500.0, vmax=500.0,
+                    apodize=0.2):
+    """
+    Tonry & Davis (1979) FFT cross-correlation on a log-lambda grid.
+
+    Parameters
+    ----------
+    wav, flux : 1-D arrays
+        Object spectrum (continuum-flattened band is fine; we re-flatten).
+    template_interp : callable
+        interp1d over the rest-frame template flux vs wavelength.
+    vmin, vmax : float
+        Velocity search window (km/s).
+    apodize : float
+        Tukey taper fraction applied to both spectra before the FFT.
+
+    Returns
+    -------
+    (rv, rv_err, r_value, vel_axis, ccf)  or  None if the fit is impossible.
+        rv, rv_err in km/s; r_value is the Tonry-Davis detection statistic.
+    """
+    wav  = np.asarray(wav, float)
+    flux = np.asarray(flux, float)
+    good = np.isfinite(wav) & np.isfinite(flux) & (flux > 0)
+    if good.sum() < 20:
+        return None
+    wav, flux = wav[good], flux[good]
+
+    # Sort and remove non-increasing (overlapping orders) wavelengths
+    srt = np.argsort(wav)
+    wav, flux = wav[srt], flux[srt]
+    keep = np.concatenate([[True], np.diff(wav) > 0])
+    wav, flux = wav[keep], flux[keep]
+    if len(wav) < 20:
+        return None
+
+    # ── Uniform ln(λ) grid: velocity shift ↔ constant pixel lag ──────────────
+    lnw   = np.log(wav)
+    dln   = np.median(np.diff(lnw))
+    if not np.isfinite(dln) or dln <= 0:
+        return None
+    n_pix = int((lnw[-1] - lnw[0]) / dln)
+    if n_pix < 32:
+        return None
+    lng   = lnw[0] + np.arange(n_pix) * dln
+    wavg  = np.exp(lng)
+
+    # Interpolate object + template onto the grid
+    f_obj  = np.interp(wavg, wav, flux, left=np.nan, right=np.nan)
+    f_tmpl = template_interp(wavg)
+    m = np.isfinite(f_obj) & np.isfinite(f_tmpl) & (f_tmpl > 0)
+    if m.sum() < 32:
+        return None
+
+    # Continuum-flatten both to fluctuate about zero (divide by median, −1)
+    f_obj  = f_obj  / np.nanmedian(f_obj[m])  - 1.0
+    f_tmpl = f_tmpl / np.nanmedian(f_tmpl[m]) - 1.0
+    f_obj[~m]  = 0.0
+    f_tmpl[~m] = 0.0
+
+    # Apodize the ends to suppress FFT ringing
+    win = _tukey(n_pix, apodize)
+    f_obj  *= win
+    f_tmpl *= win
+
+    # Normalize to unit RMS so the CCF peak ≈ correlation coefficient
+    so  = np.sqrt(np.mean(f_obj  ** 2))
+    stp = np.sqrt(np.mean(f_tmpl ** 2))
+    if so <= 0 or stp <= 0:
+        return None
+    f_obj  /= so
+    f_tmpl /= stp
+
+    # ── FFT cross-correlation ────────────────────────────────────────────────
+    F_o = np.fft.rfft(f_obj)
+    F_t = np.fft.rfft(f_tmpl)
+    ccf = np.fft.irfft(F_o * np.conj(F_t), n=n_pix)
+    ccf = np.fft.fftshift(ccf) / n_pix
+
+    lags = np.arange(n_pix) - n_pix // 2
+    vel  = lags * dln * C_KMS
+
+    sel = (vel >= vmin) & (vel <= vmax)
+    if sel.sum() < 5:
+        return None
+    vsel = vel[sel]
+    csel = ccf[sel]
+
+    pi = int(np.argmax(csel))
+    dv_step = vsel[1] - vsel[0]
+    # peak index in the FULL ccf array (need room for the symmetry window)
+    pidx = int(np.argmin(np.abs(vel - vsel[pi])))
+    half = min(pidx, n_pix - 1 - pidx)
+    win_k = min(half, max(8, int(60.0 / abs(dv_step)) if dv_step else 8))
+
+    if win_k >= 3:
+        # ── Tonry-Davis antisymmetric-component centroid ──
+        rv, peak_h, curv = _antisym_centroid(vel, ccf, pidx, win_k)
+        # Noise proxy for r: RMS of the antisymmetric part about the INTEGER
+        # peak — kept fixed (not the minimized centroid) so r is not biased
+        # high by "measuring what we just minimized".
+        ks = np.arange(1, win_k + 1)
+        a  = (ccf[pidx + ks] - ccf[pidx - ks]) / 2.0
+        sigma_a = np.sqrt(np.mean(a ** 2))
+    else:
+        # Fallback: 3-point parabola when the window is too small
+        if 1 <= pi <= len(csel) - 2:
+            y0, y1, y2 = csel[pi - 1], csel[pi], csel[pi + 1]
+            denom = (y0 - 2 * y1 + y2)
+            frac  = 0.5 * (y0 - y2) / denom if denom != 0 else 0.0
+            rv     = vsel[pi] + frac * dv_step
+            peak_h = y1 - 0.25 * (y0 - y2) * frac
+            curv   = -denom
+        else:
+            rv, peak_h, curv = vsel[pi], csel[pi], 0.0
+        sigma_a = np.std(csel)
+
+    h = peak_h
+    r_value = float(h / (np.sqrt(2.0) * sigma_a)) if sigma_a > 0 else 0.0
+
+    # Velocity error (Tonry-Davis): σ_v ≈ (3/8) · w / (1 + r)
+    if curv > 0 and peak_h > 0:
+        sigma_pix = np.sqrt(abs(peak_h / curv))
+        fwhm = 2.3548 * sigma_pix * dv_step
+    else:
+        fwhm = 3.0 * abs(dv_step)
+    rv_err = float((3.0 / 8.0) * abs(fwhm) / (1.0 + max(r_value, 0.0)))
+
+    return rv, rv_err, r_value, vel, ccf
+

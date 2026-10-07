@@ -39,6 +39,8 @@ REGION   = "Ca II IR"           # "Ca II IR", "Halpha", "Mg b", "Hbeta", "Ca H&K
 OUT_CSV  = "rv_results.csv"     # results table
 PLOT_DIR = "rv_plots"           # one figure per spectrum
 PLOTS    = True                 # False: measure only
+SAVE_SHIFTED = True             # write each spectrum shifted to the rest frame (FITS)
+SHIFTED_DIR  = "rv_shifted"     # folder for the RV-shifted spectra
 ```
 
 then run
@@ -67,6 +69,13 @@ python measure_rv.py --template path/to/template.fits --region auto path/to/*_mu
   header lacks what it needs.
 * `rv_plots/<spectrum>_rv.png`: for each region, the CCF (top) and the
   spectrum the CCF used with the template at the adopted RV (bottom).
+* `rv_shifted/<name>__RV_shifted_<arm>_multi.fits`: each spectrum shifted to
+  the rest frame by its own adopted RV, lambda_rest = lambda_obs / (1 + RV/c).
+  Only the wavelength solution changes; the pixel data are copied unchanged.
+  The header records RV_KMS, RV_ERR, RV_REGION, RV_TMPL, RV_MEAS, and V_BARY
+  and V_HELIO when the barycentric correction is known. These files are the
+  input of the co-addition in [HASHEM](https://github.com/Mohammad-Mardini/HASHEM).
+  Files already named `*_RV_shifted_*` are skipped as input.
 
 ## Citation
 
