@@ -615,3 +615,19 @@ def tonry_davis_ccf(wav, flux, template_interp, vmin=-500.0, vmax=500.0,
 
     return rv, rv_err, r_value, vel, ccf
 
+RV_SEARCH_VMAX = 500.0
+
+
+def measure_rv_region_td(ap_order, ord_dict, data, region, template_interp,
+                         vmax=RV_SEARCH_VMAX):
+    """
+    Run one Tonry-Davis CCF for a single CCF region by concatenating the
+    pixels of every order that overlaps that region (rest frame).
+    Returns (rv, rv_err, r_value, vel_axis, ccf) or None.
+    """
+    pieces = ccf_region_pixels(ap_order, ord_dict, data, region)
+    if not pieces:
+        return None
+    return tonry_davis_ccf(np.concatenate([p[1] for p in pieces]),
+                           np.concatenate([p[2] for p in pieces]),
+                           template_interp, vmin=-vmax, vmax=vmax)
