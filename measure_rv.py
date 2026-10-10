@@ -785,3 +785,11 @@ def measure_rv_file(fp, template_interp, adopt_region):
 # RV-shifted spectra: copied unchanged from coadd_gui.py ("Apply RV correction")
 # ─────────────────────────────────────────────────────────────────────────────
 
+def effective_rv_row(row, ov):
+    """Apply one user edit to a measured result tuple.
+
+    Returns (row_eff, edit_label): edit_label is None for an unedited row,
+    "manual" for a typed value, or the region name for a region switch.
+    A region edit whose region is missing from this measurement, or equals
+    the region already adopted, is treated as no edit.
+    """
