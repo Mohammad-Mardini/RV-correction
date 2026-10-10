@@ -835,3 +835,11 @@ def write_rv_corrected_file(raw_row, ov, out_dir, template_name=None):
     keywords.  Used by "Apply RV correction" for every spectrum and by the
     RV editor's "Use this RV for the remaining process" for one spectrum.
     """
+    _raw_row = raw_row
+    _eff_row, _edit_lbl = effective_rv_row(raw_row, ov)
+    _fp_s,_rv,_vb,_vh,_pk,_rg,_cf,_dom,_reg_res,*_xtra = _eff_row
+    _out_rv_dir = Path(out_dir)
+    with fits.open(_fp_s) as _hf:
+        _hdr  = _hf[0].header.copy()
+        _data = _hf[0].data.astype(np.float64).copy()
+        _ords = parse_orders(_hdr)
