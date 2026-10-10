@@ -801,3 +801,17 @@ def effective_rv_row(row, ov):
     rv_err        = rest[0] if rest else 0.0
     scatter       = rest[2] if len(rest) > 2 else float("nan")
     n_good        = rest[3] if len(rest) > 3 else 0
+
+    mode = ov.get("mode")
+    if mode == "region":
+        reg = ov.get("region")
+        if reg == dom or reg not in reg_res:
+            return row, None
+        rv_r, r_r, vel_r, ccf_r, err_r = reg_res[reg]
+        # Same sigma rule as the measurement: max(formal, cross-region scatter)
+        err_eff = err_r
+        if n_good >= 2 and np.isfinite(scatter):
+            err_eff = max(err_r, scatter)
+        return ((fp, rv_r, vb, rv_r + vb, r_r, list(vel_r), list(ccf_r), reg,
+                 reg_res, date_obs, mjd_obs, err_eff, err_r, scatter, n_good),
+                reg)
