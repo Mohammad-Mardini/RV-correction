@@ -852,3 +852,22 @@ def write_rv_corrected_file(raw_row, ov, out_dir, template_name=None):
     # (read_mike_spectrum -> compute_dispersion).
     _wat2_raw = ""
     _wi0 = 1
+    while f"WAT2_{_wi0:03d}" in _hdr:
+        _wat2_raw += f"{_hdr[f'WAT2_{_wi0:03d}']:<68}"
+        _wi0 += 1
+    import re as _re_w2
+    _spec_strs = _re_w2.findall(
+        r'spec\d+\s*=\s*"([^"]+)"', _wat2_raw)
+    _wat2_str = "wtype=multispec label=Wavelength units=angstroms "
+    for _si, _ss in enumerate(_spec_strs, 1):
+        _pp = _ss.split()
+        _pp[3] = f"{float(_pp[3]) * _factor:.10f}"
+        _pp[4] = f"{float(_pp[4]) * _factor:.12f}"
+        _wat2_str += f'spec{_si} = "{" ".join(_pp)}" '
+    # Write padded WAT2 back
+    _del_keys = [k for k in _hdr if k.startswith("WAT2_")]
+    for k in _del_keys: del _hdr[k]
+    _chunk = 68
+    for _wi in range(0, len(_wat2_str), _chunk):
+        _hdr[f"WAT2_{(_wi//_chunk)+1:03d}"] = _wat2_str[_wi:_wi+_chunk]
+    # ASCII-safe region name (e.g. Hβ → Hbeta)
