@@ -767,3 +767,12 @@ def measure_rv_file(fp, template_interp, adopt_region):
     else:
         dom = max(region_results, key=lambda k: region_results[k][1])
         rv, pk, rg, cf, rv_err = region_results[dom]
+
+
+    rv_err_formal = rv_err
+    good_rv = [v[0] for v in region_results.values() if v[1] >= 4.0]
+    n_good  = len(good_rv)
+    scatter = float("nan")
+    if n_good >= 2:
+        scatter = float(np.std(np.array(good_rv), ddof=1))
+        rv_err  = max(rv_err_formal, scatter)
