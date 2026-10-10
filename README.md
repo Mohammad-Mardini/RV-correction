@@ -1,95 +1,126 @@
 # RV-correction
 
-Radial velocities of Magellan/MIKE echelle spectra by cross-correlation with a
-rest-frame template, with a figure of each spectrum against the template.
-It is the RV measurement of [HASHEM](https://github.com/Mohammad-Mardini/HASHEM)
-as a single script, and gives the same RVs as the HASHEM app.
+![Python](https://img.shields.io/badge/python-3.10%2B-blue)
+![License: MIT](https://img.shields.io/badge/license-MIT-green)
 
-Author: Mohammad K. H. Mardini
+**Radial velocities for multi-epoch Magellan/MIKE echelle spectra, and rest-frame
+copies of every spectrum ready for co-addition.**
 
-## Method
+One script, `measure_rv.py`. Point it at your `*_multi.fits` files and an RV
+template, run it, and get:
 
-Each CCF region (Ca II triplet 8450-8750 A, Halpha 6510-6610 A, Mg b
-5100-5200 A, Hbeta 4810-4910 A, and 4290-4390 A) is continuum-normalized,
-resampled to log wavelength, and cross-correlated with the template by FFT.
-The RV comes from the Tonry & Davis (1979) antisymmetric-component centroid,
-with their r statistic and error, searched within +/-500 km/s. The adopted RV
-is that of the chosen region (default Ca II triplet), or of the highest-r
-region if that one is not detected. When two or more regions have r >= 4, the
-quoted error is the larger of the formal error and their scatter.
-Barycentric corrections use the observation time, pointing and site in each
-header.
+- a table of radial velocities with uncertainties and barycentric corrections,
+- a diagnostic figure per spectrum (CCF and spectrum versus template), and
+- each spectrum shifted to the rest frame by its own RV, as FITS.
 
-## Installation
+It is the RV step of [HASHEM](https://github.com/Mohammad-Mardini/HASHEM), packaged
+to run on its own. It gives the same velocities as the HASHEM app.
 
-```
+---
+
+## Quick start
+
+```bash
 git clone https://github.com/Mohammad-Mardini/RV-correction.git
 cd RV-correction
 pip install -r requirements.txt
 ```
 
-## Usage
+Open `measure_rv.py`, set the template path (and anything else) in the settings
+block at the top, then run it from the folder that holds your spectra:
 
-Edit the settings at the top of `measure_rv.py` once:
-
-```python
-SPECTRA  = "*_multi.fits"       # spectra to measure (a glob pattern or a list)
-TEMPLATE = "hd122563.fits"      # rest-frame RV template (1-D FITS)
-REGION   = "Ca II IR"           # "Ca II IR", "Halpha", "Mg b", "Hbeta", "Ca H&K" or "auto"
-OUT_CSV  = "rv_results.csv"     # results table
-PLOT_DIR = "rv_plots"           # one figure per spectrum
-PLOTS    = True                 # False: measure only
-SAVE_SHIFTED = True             # write each spectrum shifted to the rest frame (FITS)
-SHIFTED_DIR  = "rv_shifted"     # folder for the RV-shifted spectra
-OBSERVATORY     = "Magellan (Las Campanas; MIKE)"   # site for the barycentric correction
-USE_HEADER_SITE = True          # header SITELAT/SITELONG/SITEALT first, if present
-```
-
-`OBSERVATORY` is a name from the `OBSERVATORIES` table in the script (about 30
-optical observatories; coordinates from astropy's observatory registry) or
-your own `(latitude_deg, longitude_deg_east, height_m)`. With
-`USE_HEADER_SITE = True` a spectrum's own site keywords are used when present,
-and `OBSERVATORY` only when they are missing; with `False` it is used for every
-spectrum. The site affects only Earth's rotation, less than 0.5 km/s.
-
-then run
-
-```
+```bash
 python measure_rv.py
 ```
 
-Command-line arguments override the settings:
+That is all. Results appear on screen and in the files listed under
+[Output](#output).
 
+---
+
+## Settings
+
+All settings sit at the top of `measure_rv.py`. Relative paths are taken from
+the folder you run the script in.
+
+| Setting | Default | What it does |
+|---|---|---|
+| `SPECTRA` | `"*_multi.fits"` | Spectra to measure: a glob pattern or a list of patterns |
+| `TEMPLATE` | `"hd122563.fits"` | Rest-frame RV template (1-D FITS, linear `CRVAL1`/`CDELT1`) |
+| `REGION` | `"Ca II IR"` | Region whose RV is adopted: `"Ca II IR"`, `"Halpha"`, `"Mg b"`, `"Hbeta"`, `"Ca H&K"`, or `"auto"` |
+| `OUT_CSV` | `"rv_results.csv"` | Results table |
+| `PLOT_DIR` | `"rv_plots"` | Folder for the diagnostic figures |
+| `PLOTS` | `True` | `False` to skip the figures |
+| `SAVE_SHIFTED` | `True` | Write rest-frame copies of the spectra |
+| `SHIFTED_DIR` | `"rv_shifted"` | Folder for the rest-frame copies |
+| `OBSERVATORY` | `"Magellan (Las Campanas; MIKE)"` | Site for the barycentric correction (see [Observatory](#observatory)) |
+| `USE_HEADER_SITE` | `True` | Use each header's own site keywords when present |
+
+Every setting can also be given on the command line, which overrides the file:
+
+```bash
+python measure_rv.py --template ref/hd122563.fits --region auto data/*_multi.fits
+python measure_rv.py --help
 ```
-python measure_rv.py --template path/to/template.fits --region auto path/to/*_multi.fits
-```
 
-## Input
-
-* MIKE `*_multi.fits` spectra from CarPy (object, noise and S/N bands; linear
-  WAT2 wavelength solutions). Co-added spectra (`*_coadd_*`) are skipped.
-* A rest-frame 1-D template in FITS with a linear CRVAL1/CDELT1 solution.
+---
 
 ## Output
 
-* A table on screen and `rv_results.csv`: RV and error (topocentric), adopted
-  region, Tonry-Davis r, v_bary and v_helio, the RV and r of every region,
-  the observation date, and the template name. v_bary is left empty when the
-  header lacks what it needs.
-* `rv_plots/<spectrum>_rv.png`: for each region, the CCF (top) and the
-  spectrum the CCF used with the template at the adopted RV (bottom).
-* `rv_shifted/<name>__RV_shifted_<arm>_multi.fits`: each spectrum shifted to
-  the rest frame by its own adopted RV, lambda_rest = lambda_obs / (1 + RV/c).
-  Only the wavelength solution changes; the pixel data are copied unchanged.
-  The header records RV_KMS, RV_ERR, RV_REGION, RV_TMPL, RV_MEAS, and V_BARY
-  and V_HELIO when the barycentric correction is known. These files are the
-  input of the co-addition in [HASHEM](https://github.com/Mohammad-Mardini/HASHEM).
-  Files already named `*_RV_shifted_*` are skipped as input.
+| File | Contents |
+|---|---|
+| `rv_results.csv` | One row per spectrum: RV and error (topocentric, km/s), adopted region, Tonry-Davis *r*, `v_bary`, `v_helio`, the RV and *r* of every region, observation date and MJD, template, site, and the name of the rest-frame copy |
+| `rv_plots/<name>_rv.png` | Top: the CCF of each detected region, with the adopted region marked and a warning if the peak sits at the edge of the search window. Bottom: the spectrum the CCF actually used, with the template drawn at the adopted RV |
+| `rv_shifted/<name>__RV_shifted_<arm>_multi.fits` | The spectrum in the rest frame. Only the wavelength solution changes; the pixel data are copied unchanged |
 
-## Citation
+Headers of the rest-frame copies record what was done:
 
-Please cite using `CITATION.cff` (GitHub shows a "Cite this repository" button).
+| Keyword | Meaning |
+|---|---|
+| `RV_KMS` | RV the spectrum was shifted by (km/s) |
+| `RV_ERR` | Its uncertainty (km/s) |
+| `RV_REGION` | Region the RV came from |
+| `RV_TMPL` | Template the RV was measured with |
+| `RV_MEAS` | RV as measured |
+| `V_BARY`, `V_HELIO` | Barycentric correction and corrected RV (km/s); omitted when the header lacks what the correction needs |
 
-## Licence
+Co-added spectra (`*_coadd_*`) and files that are already rest-frame copies
+(`*_RV_shifted_*`) are skipped as input, so running the script twice in the
+same folder does not shift anything twice.
 
-MIT; see `LICENSE`.
+---
+
+## How the RV is measured
+
+For each spectrum and each CCF region:
+
+1. **Select pixels.** Every echelle order with at least 10 pixels within the
+   region (plus 5 Å on each side) contributes.
+2. **Normalize.** Each order is continuum-normalized with a spline (20 Å knot
+   spacing) fitted with iterative, noise-weighted sigma clipping.
+3. **Cross-correlate.** Spectrum and template are resampled to a common uniform
+   ln λ grid, divided by their median, tapered with a cosine (Tukey) window, and
+   cross-correlated by FFT. A constant lag on this grid is a constant velocity.
+4. **Locate the peak.** Within ±500 km/s, the velocity comes from the
+   antisymmetric-component centroid of the CCF peak (Tonry & Davis 1979), with
+   their statistic *r* = *h* / (√2 σ<sub>a</sub>) and error σ<sub>v</sub> = (3/8) *w* / (1 + *r*).
+
+The velocities are combined as follows:
+
+- **Adopted RV:** that of the region set by `REGION`. If that region is not
+  detected, or `REGION = "auto"`, the region with the highest *r* is used. If no
+  region is detected, a joint CCF over all regions is used.
+- **Uncertainty:** when two or more regions have *r* ≥ 4, the quoted error is the
+  larger of the formal error and the scatter of their velocities, so disagreement
+  between regions is not hidden.
+- **Barycentric correction:** computed with astropy at mid-exposure, from the
+  observation time (`DATE-OBS`, or MIKE's `UT-DATE` with `UT-START`/`UT-TIME`,
+  or `MJD-OBS`), the pointing (`RA-D`/`DEC-D` or `RA`/`DEC`), and the site.
+  `v_helio` = RV + `v_bary`.
+- **Rest frame:** λ<sub>rest</sub> = λ<sub>obs</sub> / (1 + RV/*c*), applied to
+  each order's wavelength solution.
+
+The RVs in the table and in `RV_KMS` are topocentric: they are what the
+spectrum must be shifted by, because each spectrum's wavelengths are in the
+frame of its own night.
+
