@@ -825,3 +825,13 @@ def effective_rv_row(row, ov):
                  date_obs, mjd_obs, err_m, err_m, scatter, n_good),
                 "manual")
     return row, None
+
+
+def write_rv_corrected_file(raw_row, ov, out_dir, template_name=None):
+    """Write ONE RV-corrected spectrum to out_dir and return its path.
+
+    Shifts the wavelength solution by the effective RV (the measurement with
+    the user edit `ov` applied, see effective_rv_row) and records the RV
+    keywords.  Used by "Apply RV correction" for every spectrum and by the
+    RV editor's "Use this RV for the remaining process" for one spectrum.
+    """
