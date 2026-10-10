@@ -736,3 +736,16 @@ def measure_rv_file(fp, template_interp, adopt_region):
     then v_helio is NaN too.  date_obs = exposure start (UTC ISO), mjd_obs =
     mid-exposure MJD (see obs_meta).
     """
+    
+    with fits.open(fp) as h:
+    data   = h[0].data.astype(np.float64)
+    orders = parse_orders(h[0].header)
+    ap_o = [o["ap"] for o in orders]
+    od   = {o["ap"]: o for o in orders}
+    # Exposure start (date), mid-exposure MJD and barycentric correction from
+    # the header; v_bary is NaN (not 0) when it cannot be computed.
+    meta     = obs_meta(fp)
+    date_obs = meta["date"]
+    mjd_obs  = meta["mjd"]
+    vb       = meta["v_bary"]
+
