@@ -793,3 +793,11 @@ def effective_rv_row(row, ov):
     A region edit whose region is missing from this measurement, or equals
     the region already adopted, is treated as no edit.
     """
+
+    if not ov:
+        return row, None
+    (fp, rv, vb, vh, pk, rg, cf, dom, reg_res,
+     date_obs, mjd_obs, *rest) = row
+    rv_err        = rest[0] if rest else 0.0
+    scatter       = rest[2] if len(rest) > 2 else float("nan")
+    n_good        = rest[3] if len(rest) > 3 else 0
