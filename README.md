@@ -124,3 +124,62 @@ The RVs in the table and in `RV_KMS` are topocentric: they are what the
 spectrum must be shifted by, because each spectrum's wavelengths are in the
 frame of its own night.
 
+---
+
+## Observatory
+
+The barycentric correction needs the observing site. `OBSERVATORY` takes a name
+from the `OBSERVATORIES` table in the script, which lists about 30 optical
+observatories (Magellan, Paranal, La Silla, Gemini North and South, Keck, Subaru,
+CFHT, LBT, McDonald, Apache Point, La Palma, Calar Alto, Xinglong, SALT, and
+others), or your own coordinates:
+
+```python
+OBSERVATORY = "Paranal (VLT; UVES, ESPRESSO)"
+OBSERVATORY = (-29.01423, -70.69242, 2400)    # latitude, longitude (east +), height in m
+```
+
+Coordinates come from astropy's observatory registry, except Magellan, whose
+values are those MIKE writes into its headers. With `USE_HEADER_SITE = True`,
+a spectrum's own `SITELAT`/`SITELONG`/`SITEALT` take priority; set it to `False`
+to apply `OBSERVATORY` to every spectrum. The site enters only through Earth's
+rotation, so it changes the correction by less than 0.5 km/s.
+
+---
+
+## Input requirements
+
+- **Spectra:** MIKE `*_multi.fits` files from CarPy, with the object, noise and
+  S/N bands and linear per-order (WAT2) wavelength solutions.
+- **Template:** a 1-D spectrum in the rest frame, in FITS with a linear
+  wavelength solution. A bright metal-poor giant such as HD 122563 works well
+  for metal-poor targets.
+
+Check that each spectrum's wavelength solution matches its own arc before
+measuring: a wrong solution gives a wrong RV. HASHEM includes a tool for this
+(`recalibrate_wavelength.py`).
+
+---
+
+## Requirements
+
+Python 3.10 or later, with numpy, scipy, astropy and matplotlib (3.5 or later):
+
+```bash
+pip install -r requirements.txt
+```
+
+---
+
+## Citation
+
+If you use this code, please cite it (GitHub's **Cite this repository** button
+reads `CITATION.cff`) and the method paper:
+
+> Tonry, J., & Davis, M. 1979, AJ, 84, 1511
+
+## Licence
+
+MIT. See [`LICENSE`](LICENSE).
+
+
