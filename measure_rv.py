@@ -899,5 +899,14 @@ def write_rv_corrected_file(raw_row, ov, out_dir, template_name=None):
         _hdr["RV_TMPL"] = (str(template_name), "RV template the RVs were measured with")
     _hdr["RV_EDIT"]  = (bool(_edit_lbl),
                         "Adopted RV edited by user")
+    # Insert _RV_shifted_ before blue/red in filename
+    import re as _re_rv
+    _rv_name = _re_rv.sub(
+        r'(blue|red)_multi\.fits$',
+        r'_RV_shifted_\1_multi.fits',
+        Path(_fp_s).name)
+    _out_fp = _out_rv_dir / _rv_name
+    fits.writeto(str(_out_fp), _data, _hdr, overwrite=True)
+    return _out_fp
 
 
