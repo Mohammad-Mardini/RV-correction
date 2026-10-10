@@ -815,3 +815,13 @@ def effective_rv_row(row, ov):
         return ((fp, rv_r, vb, rv_r + vb, r_r, list(vel_r), list(ccf_r), reg,
                  reg_res, date_obs, mjd_obs, err_eff, err_r, scatter, n_good),
                 reg)
+
+
+    if mode == "manual":
+        rv_m  = float(ov.get("rv", rv))
+        err_m = ov.get("rv_err", rv_err)
+        err_m = float(err_m) if err_m is not None and np.isfinite(err_m) else 0.0
+        return ((fp, rv_m, vb, rv_m + vb, pk, rg, cf, "manual", reg_res,
+                 date_obs, mjd_obs, err_m, err_m, scatter, n_good),
+                "manual")
+    return row, None
