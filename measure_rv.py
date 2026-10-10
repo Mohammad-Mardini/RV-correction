@@ -749,3 +749,10 @@ def measure_rv_file(fp, template_interp, adopt_region):
     mjd_obs  = meta["mjd"]
     vb       = meta["v_bary"]
 
+    region_results = {}   # {name: (rv, r_value, vel, ccf, rv_err)}
+    for region in CCF_REGIONS:
+        td = measure_rv_region_td(ap_o, od, data, region, template_interp)
+        if td is None:
+            continue
+        rv_b, rv_e, r_val, vel, ccf = td
+        region_results[region[2]] = (rv_b, r_val, list(vel), list(ccf), rv_e)
