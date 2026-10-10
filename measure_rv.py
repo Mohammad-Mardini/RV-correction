@@ -756,3 +756,14 @@ def measure_rv_file(fp, template_interp, adopt_region):
             continue
         rv_b, rv_e, r_val, vel, ccf = td
         region_results[region[2]] = (rv_b, r_val, list(vel), list(ccf), rv_e)
+
+
+    if not region_results:
+        rv, pk, rg, cf = measure_rv(fp, ap_o, od, data)
+        dom = "joint"; rv_err = 0.0
+    elif adopt_region != RV_AUTO_LABEL and adopt_region in region_results:
+        dom = adopt_region
+        rv, pk, rg, cf, rv_err = region_results[dom]
+    else:
+        dom = max(region_results, key=lambda k: region_results[k][1])
+        rv, pk, rg, cf, rv_err = region_results[dom]
