@@ -843,3 +843,12 @@ def write_rv_corrected_file(raw_row, ov, out_dir, template_name=None):
         _hdr  = _hf[0].header.copy()
         _data = _hf[0].data.astype(np.float64).copy()
         _ords = parse_orders(_hdr)
+    # Shift wavelength solution: w_rest = w_obs / (1 + rv/c)
+    _factor = 1.0 / (1.0 + _rv / C_KMS)
+    # Update WAT2 with corrected w1/dw — PRESERVE the
+    # original CarPy spec strings verbatim (aperture,
+    # beam, dtype=0 linear, z, aplow, aphigh) and patch
+    # only fields 3/4. Fabricating strings breaks SMHR
+    # (read_mike_spectrum -> compute_dispersion).
+    _wat2_raw = ""
+    _wi0 = 1
