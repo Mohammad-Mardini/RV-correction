@@ -871,3 +871,18 @@ def write_rv_corrected_file(raw_row, ov, out_dir, template_name=None):
     for _wi in range(0, len(_wat2_str), _chunk):
         _hdr[f"WAT2_{(_wi//_chunk)+1:03d}"] = _wat2_str[_wi:_wi+_chunk]
     # ASCII-safe region name (e.g. Hβ → Hbeta)
+    _dom_ascii = (_dom
+        .replace('α','alpha').replace('β','beta')
+        .replace('γ','gamma').replace('δ','delta')
+        .replace('Å','Ang').replace('±','+/-'))
+    _hdr["RV_KMS"]   = (_rv,        "Applied RV correction km/s")
+    _hdr["RV_ADOPT"] = (_rv,        "Adopted RV km/s")
+    _hdr["RV_REGION"]= (_dom_ascii, "Region used for RV")
+    _rv_err_hdr = (_xtra[2] if len(_xtra) >= 3 else 0.0)
+    if _rv_err_hdr and np.isfinite(_rv_err_hdr):
+        _hdr["RV_ERR"] = (round(float(_rv_err_hdr), 4),
+                          "User-set RV uncertainty km/s"
+                          if _edit_lbl == "manual" else
+                          "Tonry-Davis RV uncertainty km/s")
+    # v_bary unknown → leave both out (FITS cannot hold NaN,
+    # and V_HELIO must never silently equal the topocentric RV)
