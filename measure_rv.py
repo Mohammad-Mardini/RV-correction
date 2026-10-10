@@ -886,3 +886,18 @@ def write_rv_corrected_file(raw_row, ov, out_dir, template_name=None):
                           "Tonry-Davis RV uncertainty km/s")
     # v_bary unknown → leave both out (FITS cannot hold NaN,
     # and V_HELIO must never silently equal the topocentric RV)
+    if np.isfinite(_vb):
+        _hdr["V_BARY"]  = (float(_vb), "Barycentric correction km/s")
+        _hdr["V_HELIO"] = (float(_vh), "Barycentric-corrected RV km/s")
+    else:
+        for _k in ("V_BARY", "V_HELIO"):
+            if _k in _hdr: del _hdr[_k]
+    # Provenance of the adopted RV
+    _hdr["RV_MEAS"]  = (float(_raw_row[1]),
+                        "Measured RV km/s (before user edit)")
+    if template_name:
+        _hdr["RV_TMPL"] = (str(template_name), "RV template the RVs were measured with")
+    _hdr["RV_EDIT"]  = (bool(_edit_lbl),
+                        "Adopted RV edited by user")
+
+
