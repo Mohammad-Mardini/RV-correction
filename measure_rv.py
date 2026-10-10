@@ -704,3 +704,35 @@ def ccf_region_pixels(ap_order, ord_dict, data, region):
 
 
 RV_AUTO_LABEL = "Best CCF peak (auto)"
+
+
+def measure_rv_file(fp, template_interp, adopt_region):
+    """Measure the RV of ONE spectrum.
+
+    Single code path shared by "Measure RVs" and "Export RV info", so the
+    adopted region and the uncertainty rule are identical whichever button
+    ran the measurement.
+
+    Every CCF region is measured independently with the Tonry-Davis FFT CCF.
+    Each region yields (rv, r_value, vel_axis, ccf, rv_err); r_value is the
+    Tonry-Davis detection statistic (higher = more confident).
+
+    Adopted region: `adopt_region` (the "RV adoption region" selector) when
+    that region was detected in this spectrum; otherwise, or when the
+    selector is RV_AUTO_LABEL, the region with the highest r.  If no region
+    is detected, falls back to the joint multi-region CCF ("joint").
+
+    Uncertainty: a single region's formal Tonry-Davis error can't see
+    region-to-region systematics (e.g. an interstellar-contaminated Ca line
+    disagreeing with the metal-line regions).  Cross-check with the spread
+    of the well-detected regions (r >= 4) and quote the LARGER of the formal
+    error and that scatter, so genuine disagreement inflates the error bar
+    instead of being hidden.
+
+    Returns the 15-element result tuple stored in rv_results:
+        (fp, rv, v_bary, v_helio, r, vel, ccf, region, region_results,
+         date_obs, mjd_obs, rv_err, rv_err_formal, scatter, n_good)
+    rv is topocentric; v_bary is NaN when the header lacks what it needs, and
+    then v_helio is NaN too.  date_obs = exposure start (UTC ISO), mjd_obs =
+    mid-exposure MJD (see obs_meta).
+    """
