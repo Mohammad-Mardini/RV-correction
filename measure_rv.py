@@ -776,3 +776,7 @@ def measure_rv_file(fp, template_interp, adopt_region):
     if n_good >= 2:
         scatter = float(np.std(np.array(good_rv), ddof=1))
         rv_err  = max(rv_err_formal, scatter)
+
+    return (str(fp), rv, vb, rv + vb, pk, list(rg), list(cf), dom,
+            region_results, date_obs, mjd_obs, rv_err, rv_err_formal,
+            scatter, n_good)
