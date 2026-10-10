@@ -780,3 +780,8 @@ def measure_rv_file(fp, template_interp, adopt_region):
     return (str(fp), rv, vb, rv + vb, pk, list(rg), list(cf), dom,
             region_results, date_obs, mjd_obs, rv_err, rv_err_formal,
             scatter, n_good)
+
+# ─────────────────────────────────────────────────────────────────────────────
+# RV-shifted spectra: copied unchanged from coadd_gui.py ("Apply RV correction")
+# ─────────────────────────────────────────────────────────────────────────────
+
