@@ -910,3 +910,13 @@ def write_rv_corrected_file(raw_row, ov, out_dir, template_name=None):
     return _out_fp
 
 
+# ─────────────────────────────────────────────────────────────────────────────
+# Figure and command line
+# ─────────────────────────────────────────────────────────────────────────────
+
+def site_note(fp):
+    """Which site the barycentric correction of a spectrum used."""
+    try:
+        return obs_site_from_header(fits.getheader(fp))[1]
+    except Exception as e:
+        return f"unknown ({type(e).__name__})"
