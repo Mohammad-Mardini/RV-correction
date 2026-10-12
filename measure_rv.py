@@ -1024,3 +1024,30 @@ def main():
                     help="do not write RV-shifted spectra")
     a = ap.parse_args()
     np.seterr(divide="ignore", invalid="ignore")   # zero-noise pixels get zero weight
+
+
+    # Spectra: from the command line, else from SPECTRA (pattern or list)
+    if a.spectra:
+        spectra = list(a.spectra)
+        source = "command line"
+    else:
+        pats = [SPECTRA] if isinstance(SPECTRA, str) else list(SPECTRA)
+        spectra = sorted({f for pat in pats for f in glob.glob(os.path.expanduser(pat))})
+        source = f"SPECTRA = {SPECTRA!r} in {Path.cwd()}"
+    coadds = [f for f in spectra if "_coadd_" in Path(f).name]
+    shifted = [f for f in spectra if "_RV_shifted_" in Path(f).name]
+    spectra = [f for f in spectra if f not in coadds and f not in shifted]
+    if coadds:
+        print(f"Skipping {len(coadds)} co-added spectra (already in the rest frame): "
+              + ", ".join(Path(f).name for f in coadds))
+    if shifted:
+        print(f"Skipping {len(shifted)} RV-shifted spectra (already in the rest frame)")
+    if not spectra:
+        sys.exit(f"No spectra found ({source}). Set SPECTRA at the top of "
+                 f"{Path(__file__).name}, run it from your spectra folder, or list "
+                 "the files on the command line.")
+    if not Path(a.template).is_file():
+        sys.exit(f"Template not found: {Path(a.template).resolve()}. Set TEMPLATE at the "
+                 f"top of {Path(__file__).name} or pass --template FILE.")
+    print(f"Spectra:  {len(spectra)} files ({source})")
+    print(f"Template: {Path(a.template).resolve()}")
