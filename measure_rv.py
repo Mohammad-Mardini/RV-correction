@@ -1077,3 +1077,15 @@ def main():
     print()
     _TEMPLATE["path"] = str(a.template)
     _, _, template_interp = load_template(str(a.template))
+
+
+    region = a.region
+    if region.lower() == "auto":
+        region = RV_AUTO_LABEL
+    else:
+        region = REGION_ALIASES.get(region.lower(), region)
+        if region not in [r[2] for r in CCF_REGIONS]:
+            sys.exit(f"Unknown region {a.region!r}; choose from "
+                     + ", ".join(r[2] for r in CCF_REGIONS) + " or auto")
+
+
