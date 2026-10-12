@@ -979,3 +979,31 @@ def plot_star_vs_template(result, template_interp, template_name, out_path):
             clean.append(f[~spk])
             if spk.any():
                 ax.plot(w[spk], f[spk], "o", ms=3, color="#dc2626", zorder=5)
+        if n_spk:
+            ax.plot([], [], "o", ms=3, color="#dc2626",
+                    label=f"{n_spk} spike pixels the CCF does not remove")
+        if pix:
+            wall = np.concatenate([np.asarray(p[1]) for p in pix])
+            wg = np.linspace(wall.min(), wall.max(), 5000)
+            tf = template_interp(wg / np.exp(rv / C_KMS))
+            ax.plot(wg, tf, color="#d97706", lw=1.1,
+                    label=f"{template_name} at RV = {rv:.2f} km/s")
+            ax.set_xlim(wall.min(), wall.max())
+            # y range from the spectrum without spikes and the template, so a
+            # single spike cannot squash the plot (spikes above it are cut)
+            fc = np.concatenate(clean) if clean else np.array([1.0])
+            tv = tf[np.isfinite(tf)]
+            lo = min(np.nanpercentile(fc, 0.5), np.min(tv) if tv.size else 1.0) - 0.08
+            hi = max(np.nanpercentile(fc, 99.5), np.max(tv) if tv.size else 1.0) + 0.12
+            ax.set_ylim(max(lo, -0.5), min(max(hi, 1.2), 2.0))
+        ax.set_xlabel("Observed wavelength (\u00c5)")
+        ax.set_ylabel("Normalized flux")
+        ax.legend(fontsize=7.5, loc="lower left")
+    fig.suptitle(f"{Path(fp).name}:  adopted RV = {rv:.2f} \u00b1 {result[11]:.2f} km/s "
+                 f"({adopted})", fontsize=12)
+    fig.tight_layout()
+    out_path = Path(out_path)
+    out_path.parent.mkdir(parents=True, exist_ok=True)
+    fig.savefig(out_path, dpi=130)
+    plt.close(fig)
+    return out_path
