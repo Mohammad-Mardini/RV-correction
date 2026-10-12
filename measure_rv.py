@@ -965,3 +965,17 @@ def plot_star_vs_template(result, template_interp, template_name, out_path):
                      color="#b45309" if at_edge else "black")
         ax.set_xlabel("Velocity (km/s)")
         ax.set_ylabel("CCF")
+        # Spectrum the CCF used, and the template at the adopted RV
+        ax = axes[1, j]
+        pix = ccf_region_pixels(ap_o, od, data, reg)
+        n_spk, clean = 0, []
+        for k, (ap, w, f) in enumerate(pix):
+            w, f = np.asarray(w), np.asarray(f)
+            ax.plot(w, f, color="#1f77b4", lw=0.8, label=Path(fp).name if k == 0 else None)
+            med = np.nanmedian(f)
+            sig = 1.4826 * np.nanmedian(np.abs(f - med))
+            spk = (f - med) > max(5.0 * sig, 0.08)
+            n_spk += int(spk.sum())
+            clean.append(f[~spk])
+            if spk.any():
+                ax.plot(w[spk], f[spk], "o", ms=3, color="#dc2626", zorder=5)
