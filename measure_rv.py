@@ -1089,3 +1089,59 @@ def main():
                      + ", ".join(r[2] for r in CCF_REGIONS) + " or auto")
 
 
+
+    rows = []
+    print(f"{'spectrum':48s} {'RV':>9s} {'err':>6s}  {'region':9s} {'r':>5s} {'v_bary':>8s} {'v_helio':>8s}")
+    for fp in spectra:
+        try:
+            res = measure_rv_file(fp, template_interp, region)
+        except Exception as e:
+            print(f"{Path(fp).name:48s} failed: {type(e).__name__}: {e}")
+            continue
+        fp_, rv, vb, vh, pk, rg, cf, dom, reg_res = res[:9]
+        date_obs, mjd_obs, rv_err = res[9], res[10], res[11]
+        vb_ok = vb is not None and np.isfinite(vb)
+        dash = "       \u2014"                     # shown when v_bary is unknown
+        vb_txt = f"{vb:8.2f}" if vb_ok else dash
+        vh_txt = f"{vh:8.2f}" if vb_ok else dash
+        print(f"{Path(fp).name:48s} {rv:9.2f} {rv_err:6.2f}  {dom:9s} {pk:5.1f} "
+              f"{vb_txt} {vh_txt}")
+        row = {"file": Path(fp).name, "date_obs": date_obs, "mjd_obs": mjd_obs,
+               "rv_kms": round(rv, 3), "rv_err_kms": round(rv_err, 3), "region": dom,
+               "td_r": round(float(pk), 2),
+               "v_bary_kms": round(vb, 3) if vb_ok else "",
+               "v_helio_kms": round(vh, 3) if vb_ok else "",
+               "template": Path(a.template).name,
+               "site": site_note(fp)}
+        for reg in CCF_REGIONS:
+            key = CSV_NAMES.get(reg[2], reg[2])
+            if reg[2] in reg_res:
+                row[f"rv_{key}"] = round(reg_res[reg[2]][0], 3)
+                row[f"r_{key}"] = round(reg_res[reg[2]][1], 2)
+            else:
+                row[f"rv_{key}"] = row[f"r_{key}"] = ""
+        if not a.no_shifted:
+            try:
+                out_fp = write_rv_corrected_file(res, None, a.shifted_dir,
+                                                 Path(a.template).name)
+                row["shifted_file"] = str(out_fp)
+            except Exception as e:
+                row["shifted_file"] = ""
+                print(f"   could not write the RV-shifted copy: {type(e).__name__}: {e}")
+        rows.append(row)
+        if not a.no_plots:
+            plot_star_vs_template(res, template_interp, Path(a.template).name,
+                                  Path(a.plot_dir) / (Path(fp).stem + "_rv.png"))
+    if rows:
+        with open(a.out, "w", newline="", encoding="utf-8") as fh:
+            wr = csv.DictWriter(fh, fieldnames=list(rows[0].keys()))
+            wr.writeheader()
+            wr.writerows(rows)
+        print(f"\n{len(rows)} spectra -> {a.out}"
+              + ("" if a.no_plots else f", figures in {a.plot_dir}/")
+              + ("" if a.no_shifted else f", RV-shifted spectra in {a.shifted_dir}/"))
+
+
+if __name__ == "__main__":
+    main()
+
