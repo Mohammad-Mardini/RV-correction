@@ -1007,3 +1007,20 @@ def plot_star_vs_template(result, template_interp, template_name, out_path):
     fig.savefig(out_path, dpi=130)
     plt.close(fig)
     return out_path
+
+
+
+def main():
+    ap = argparse.ArgumentParser(description=__doc__,
+                                 formatter_class=argparse.RawDescriptionHelpFormatter)
+    ap.add_argument("spectra", nargs="*", help="*_multi.fits files (default: SPECTRA)")
+    ap.add_argument("--template", default=TEMPLATE, help="rest-frame RV template (default: TEMPLATE)")
+    ap.add_argument("--region", default=REGION)
+    ap.add_argument("--out", default=OUT_CSV)
+    ap.add_argument("--plot-dir", default=PLOT_DIR)
+    ap.add_argument("--no-plots", action="store_true", default=not PLOTS)
+    ap.add_argument("--shifted-dir", default=SHIFTED_DIR)
+    ap.add_argument("--no-shifted", action="store_true", default=not SAVE_SHIFTED,
+                    help="do not write RV-shifted spectra")
+    a = ap.parse_args()
+    np.seterr(divide="ignore", invalid="ignore")   # zero-noise pixels get zero weight
