@@ -1051,3 +1051,29 @@ def main():
                  f"top of {Path(__file__).name} or pass --template FILE.")
     print(f"Spectra:  {len(spectra)} files ({source})")
     print(f"Template: {Path(a.template).resolve()}")
+    
+    # Observatory for the barycentric correction
+    if isinstance(OBSERVATORY, str):
+        if OBSERVATORY not in OBSERVATORIES:
+            sys.exit(f"Unknown OBSERVATORY {OBSERVATORY!r}. Choose one of:\n  "
+                     + "\n  ".join(OBSERVATORIES)
+                     + "\nor give (latitude_deg, longitude_deg_east, height_m).")
+        site_name, (lat, lon, h) = OBSERVATORY, OBSERVATORIES[OBSERVATORY]
+    else:
+        try:
+            lat, lon, h = (float(x) for x in OBSERVATORY)
+        except (TypeError, ValueError):
+            sys.exit("OBSERVATORY must be a name from OBSERVATORIES or "
+                     "(latitude_deg, longitude_deg_east, height_m).")
+        site_name = "custom site"
+    _SITE.update(location=EarthLocation(lat=lat * u.deg, lon=lon * u.deg, height=h * u.m),
+                 label=f"site: {site_name}", use_header=bool(USE_HEADER_SITE))
+    print(f"Site:     " + ("header SITELAT/SITELONG/SITEALT when present, else " if USE_HEADER_SITE
+                           else "") + f"{site_name} ({lat:.5f}, {lon:.5f}, {h:.0f} m)")
+    print(f"Region:   {a.region}")
+    if not a.no_shifted:
+        Path(a.shifted_dir).mkdir(parents=True, exist_ok=True)
+        print(f"RV-shifted spectra -> {Path(a.shifted_dir).resolve()}")
+    print()
+    _TEMPLATE["path"] = str(a.template)
+    _, _, template_interp = load_template(str(a.template))
