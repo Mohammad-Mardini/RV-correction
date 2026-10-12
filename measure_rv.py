@@ -920,3 +920,17 @@ def site_note(fp):
         return obs_site_from_header(fits.getheader(fp))[1]
     except Exception as e:
         return f"unknown ({type(e).__name__})"
+
+
+def plot_star_vs_template(result, template_interp, template_name, out_path):
+    """
+    Figure for one spectrum: CCF and spectrum vs template, per CCF region
+
+    Input:
+        result:          tuple returned by measure_rv_file
+        template_interp: template interpolator (rest frame)
+        template_name:   template file name, for the legend
+        out_path:        output file (PDF or PNG)
+    Output:
+        Path of the figure
+    """
