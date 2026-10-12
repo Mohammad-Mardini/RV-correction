@@ -944,3 +944,24 @@ def plot_star_vs_template(result, template_interp, template_name, out_path):
     if not regions:
         return None
     n = len(regions)
+    fig, axes = plt.subplots(2, n, figsize=(4.4 * n, 7.2), squeeze=False)
+    for j, reg in enumerate(regions):
+        name = reg[2]
+        rv_r, r_val, vel, ccf, err_r = region_res[name]
+        is_adopted = (name == adopted)
+        # CCF
+        ax = axes[0, j]
+        vel, ccf = np.asarray(vel), np.asarray(ccf)
+        m = np.abs(vel) <= RV_SEARCH_VMAX * 1.05
+        ax.plot(vel[m], ccf[m], color="#1f77b4", lw=1.3)
+        ax.axvline(rv_r, color="k", ls="--", lw=1)
+        for edge in (-RV_SEARCH_VMAX, RV_SEARCH_VMAX):
+            ax.axvline(edge, color="0.6", ls=":", lw=0.8)
+        at_edge = abs(abs(rv_r) - RV_SEARCH_VMAX) < 5.0
+        ax.set_title(f"{name}: {rv_r:.2f} \u00b1 {err_r:.2f} km/s, r = {r_val:.1f}"
+                     + ("  (adopted)" if is_adopted else "")
+                     + ("\n\u26a0 at the edge of the search window" if at_edge else ""),
+                     fontsize=10, fontweight="bold" if is_adopted else "normal",
+                     color="#b45309" if at_edge else "black")
+        ax.set_xlabel("Velocity (km/s)")
+        ax.set_ylabel("CCF")
