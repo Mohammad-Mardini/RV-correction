@@ -934,3 +934,13 @@ def plot_star_vs_template(result, template_interp, template_name, out_path):
     Output:
         Path of the figure
     """
+    fp, rv, region_res, adopted = result[0], result[1], result[8], result[7]
+    with fits.open(fp) as h:
+        data = h[0].data.astype(np.float64)
+        orders = parse_orders(h[0].header)
+    ap_o = [o["ap"] for o in orders]
+    od = {o["ap"]: o for o in orders}
+    regions = [r for r in CCF_REGIONS if r[2] in region_res]
+    if not regions:
+        return None
+    n = len(regions)
