@@ -5,6 +5,7 @@
 # Licensed under the MIT License; see LICENSE.
 # ─────────────────────────────────────────────────────────────────────────────
 
+
 import argparse
 import csv
 import glob
@@ -26,24 +27,16 @@ import matplotlib
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 
-# ─────────────────────────────────────────────────────────────────────────────
-# Settings used by "python measure_rv.py" (relative paths: from the folder you
-# run it in).  Command-line arguments override them.
-# ─────────────────────────────────────────────────────────────────────────────
+
+
 SPECTRA  = "*_multi.fits"       # spectra to measure (a glob pattern or a list)
-TEMPLATE = "/Users/mohammad/Library/CloudStorage/Dropbox/ref_spectra/hd122563.fits"  # rest-frame RV template
+TEMPLATE = "hd122563.fits"      # rest-frame RV template (1-D FITS)
 REGION   = "Ca II IR"           # "Ca II IR", "Halpha", "Mg b", "Hbeta", "Ca H&K" or "auto"
 OUT_CSV  = "rv_results.csv"     # results table
 PLOT_DIR = "rv_plots"           # one figure per spectrum
 PLOTS    = True                 # False: measure only
-
-_TEMPLATE = {"path": None}       # template file (used by the joint-CCF fallback)
-REGION_ALIASES = {"halpha": "H\u03b1", "hbeta": "H\u03b2"}
-CSV_NAMES = {"Ca II IR": "CaIIIR", "H\u03b1": "Halpha", "Mg b": "Mgb",
-             "H\u03b2": "Hbeta", "Ca H&K": "CaHK"}
-
-
-
+SAVE_SHIFTED = True             # write each spectrum shifted to the rest frame (FITS)
+SHIFTED_DIR  = "rv_shifted"     # folder for the RV-shifted spectra
 
 # Observatory for the barycentric correction: a name from OBSERVATORIES below,
 # or your own (latitude_deg, longitude_deg_east, height_m).  With
@@ -58,7 +51,7 @@ USE_HEADER_SITE = True
 OBSERVATORIES = {
     # name                                         latitude    longitude    height
     #                                                (deg)    (deg, east +)   (m)
-    "Magellan (Las Campanas; MIKE)":               (-29.01423,  -70.69242,  2400),
+    "Magellan (Las Campanas; MIKE)":               (-29.01423,  -70.69242,  2400),   # MIKE header SITELAT/SITELONG/SITEALT
     "Paranal (VLT; UVES, ESPRESSO)":               (-24.62744,  -70.40499,  2669),
     "La Silla (ESO 3.6m, MPG 2.2m; HARPS, FEROS)": (-29.25667,  -70.73000,  2347),
     "Las Campanas Observatory (du Pont)":          (-29.00333,  -70.70167,  2282),
@@ -91,9 +84,15 @@ OBSERVATORIES = {
     "SALT (Sutherland)":                           (-32.37582,   20.81081,  1798),
 }
 
+_TEMPLATE = {"path": None}       # template file (used by the joint-CCF fallback)
+REGION_ALIASES = {"halpha": "H\u03b1", "hbeta": "H\u03b2"}
+CSV_NAMES = {"Ca II IR": "CaIIIR", "H\u03b1": "Halpha", "Mg b": "Mgb",
+             "H\u03b2": "Hbeta", "Ca H&K": "CaHK"}
+
 
 # ─────────────────────────────────────────────────────────────────────────────
-# Measurement: copied unchanged from coadd_gui.py
+# Measurement: copied from coadd_gui.py (unchanged except that the site of the
+# barycentric correction can be chosen, see obs_site_from_header)
 # ─────────────────────────────────────────────────────────────────────────────
 
 CCF_REGIONS   = [(8450,8750,"Ca II IR"),(6510,6610,"Hα"),(5100,5200,"Mg b"),
@@ -198,7 +197,6 @@ def obs_time_from_header(hdr):
                             "UT-DATE+UT-START/UT-TIME, MJD-OBS, JD)")
     exp = _hdr_float(hdr, "EXPTIME", "EXPOSURE") or 0.0
     return t0, t0 + 0.5 * exp * u.second, src + (" + EXPTIME/2" if exp else " (start)")
-
 
 
 def obs_site_from_header(hdr):
@@ -470,6 +468,7 @@ def para_peak(rg,ccf):
         x,y=rg[pi-2:pi+3],ccf[pi-2:pi+3]; c=np.polyfit(x,y,2); return -c[1]/(2*c[0])
     return rg[pi]
 
+
 def measure_rv(fp,ap_order,ord_dict,data):
     rc=np.arange(-500,500,2.); cc=joint_ccf(ap_order,ord_dict,data,rc)
     ra=para_peak(rc,cc); rf=np.arange(ra-50,ra+50+0.5,0.5)
@@ -536,6 +535,7 @@ def _antisym_centroid(vel, ccf, pidx, win_k, search_pix=1.5, nsub=61):
     c_r = float(np.interp(rv + dv, vel, ccf))
     curv = -(c_l - 2.0 * peak_h + c_r)             # >0 for a maximum
     return rv, peak_h, curv
+
 
 def tonry_davis_ccf(wav, flux, template_interp, vmin=-500.0, vmax=500.0,
                     apodize=0.2):
@@ -667,6 +667,7 @@ def tonry_davis_ccf(wav, flux, template_interp, vmin=-500.0, vmax=500.0,
 
     return rv, rv_err, r_value, vel, ccf
 
+
 RV_SEARCH_VMAX = 500.0
 
 
@@ -736,10 +737,9 @@ def measure_rv_file(fp, template_interp, adopt_region):
     then v_helio is NaN too.  date_obs = exposure start (UTC ISO), mjd_obs =
     mid-exposure MJD (see obs_meta).
     """
-    
     with fits.open(fp) as h:
-    data   = h[0].data.astype(np.float64)
-    orders = parse_orders(h[0].header)
+        data   = h[0].data.astype(np.float64)
+        orders = parse_orders(h[0].header)
     ap_o = [o["ap"] for o in orders]
     od   = {o["ap"]: o for o in orders}
     # Exposure start (date), mid-exposure MJD and barycentric correction from
@@ -757,7 +757,6 @@ def measure_rv_file(fp, template_interp, adopt_region):
         rv_b, rv_e, r_val, vel, ccf = td
         region_results[region[2]] = (rv_b, r_val, list(vel), list(ccf), rv_e)
 
-
     if not region_results:
         rv, pk, rg, cf = measure_rv(fp, ap_o, od, data)
         dom = "joint"; rv_err = 0.0
@@ -767,7 +766,6 @@ def measure_rv_file(fp, template_interp, adopt_region):
     else:
         dom = max(region_results, key=lambda k: region_results[k][1])
         rv, pk, rg, cf, rv_err = region_results[dom]
-
 
     rv_err_formal = rv_err
     good_rv = [v[0] for v in region_results.values() if v[1] >= 4.0]
@@ -781,6 +779,7 @@ def measure_rv_file(fp, template_interp, adopt_region):
             region_results, date_obs, mjd_obs, rv_err, rv_err_formal,
             scatter, n_good)
 
+
 # ─────────────────────────────────────────────────────────────────────────────
 # RV-shifted spectra: copied unchanged from coadd_gui.py ("Apply RV correction")
 # ─────────────────────────────────────────────────────────────────────────────
@@ -793,7 +792,6 @@ def effective_rv_row(row, ov):
     A region edit whose region is missing from this measurement, or equals
     the region already adopted, is treated as no edit.
     """
-
     if not ov:
         return row, None
     (fp, rv, vb, vh, pk, rg, cf, dom, reg_res,
@@ -815,8 +813,6 @@ def effective_rv_row(row, ov):
         return ((fp, rv_r, vb, rv_r + vb, r_r, list(vel_r), list(ccf_r), reg,
                  reg_res, date_obs, mjd_obs, err_eff, err_r, scatter, n_good),
                 reg)
-
-
     if mode == "manual":
         rv_m  = float(ov.get("rv", rv))
         err_m = ov.get("rv_err", rv_err)
@@ -1009,7 +1005,6 @@ def plot_star_vs_template(result, template_interp, template_name, out_path):
     return out_path
 
 
-
 def main():
     ap = argparse.ArgumentParser(description=__doc__,
                                  formatter_class=argparse.RawDescriptionHelpFormatter)
@@ -1024,7 +1019,6 @@ def main():
                     help="do not write RV-shifted spectra")
     a = ap.parse_args()
     np.seterr(divide="ignore", invalid="ignore")   # zero-noise pixels get zero weight
-
 
     # Spectra: from the command line, else from SPECTRA (pattern or list)
     if a.spectra:
@@ -1051,7 +1045,6 @@ def main():
                  f"top of {Path(__file__).name} or pass --template FILE.")
     print(f"Spectra:  {len(spectra)} files ({source})")
     print(f"Template: {Path(a.template).resolve()}")
-    
     # Observatory for the barycentric correction
     if isinstance(OBSERVATORY, str):
         if OBSERVATORY not in OBSERVATORIES:
@@ -1078,7 +1071,6 @@ def main():
     _TEMPLATE["path"] = str(a.template)
     _, _, template_interp = load_template(str(a.template))
 
-
     region = a.region
     if region.lower() == "auto":
         region = RV_AUTO_LABEL
@@ -1087,8 +1079,6 @@ def main():
         if region not in [r[2] for r in CCF_REGIONS]:
             sys.exit(f"Unknown region {a.region!r}; choose from "
                      + ", ".join(r[2] for r in CCF_REGIONS) + " or auto")
-
-
 
     rows = []
     print(f"{'spectrum':48s} {'RV':>9s} {'err':>6s}  {'region':9s} {'r':>5s} {'v_bary':>8s} {'v_helio':>8s}")
@@ -1144,4 +1134,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-
